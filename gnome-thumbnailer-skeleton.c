@@ -34,6 +34,40 @@ static int output_size = 256;
 static gboolean g_fatal_warnings = FALSE;
 static char **filenames = NULL;
 
+static char *
+get_target_uri (GFile *file)
+{
+	GFileInfo *info;
+	char *target;
+
+	info = g_file_query_info (file, G_FILE_ATTRIBUTE_STANDARD_TARGET_URI, G_FILE_QUERY_INFO_NONE, NULL, NULL);
+	if (info == NULL)
+		return NULL;
+	target = g_strdup (g_file_info_get_attribute_string (info, G_FILE_ATTRIBUTE_STANDARD_TARGET_URI));
+	g_object_unref (info);
+
+	return target;
+}
+
+static char *
+get_target_path (GFile *input)
+{
+	if (g_file_has_uri_scheme (input, "trash") != FALSE ||
+	    g_file_has_uri_scheme (input, "recent") != FALSE) {
+		GFile *file;
+		char *input_uri;
+		char *input_path;
+
+		input_uri = get_target_uri (input);
+		file = g_file_new_for_uri (input_uri);
+		g_free (input_uri);
+		input_path = g_file_get_path (file);
+		g_object_unref (file);
+		return input_path;
+	}
+	return g_file_get_path (input);
+}
+
 static const GOptionEntry entries[] = {
 	{ "size", 's', 0, G_OPTION_ARG_INT, &output_size, "Size of the thumbnail in pixels", NULL },
 	{"g-fatal-warnings", 0, 0, G_OPTION_ARG_NONE, &g_fatal_warnings, "Make all warnings fatal", NULL},
@@ -84,8 +118,13 @@ int main (int argc, char **argv)
 	}
 
 	input = g_file_new_for_commandline_arg (filenames[0]);
-	input_filename = g_file_get_path (input);
+	input_filename = get_target_path (input);
 	g_object_unref (input);
+
+	if (input_filename == NULL) {
+		g_warning ("Could not get file path for %s", filenames[0]);
+		return 1;
+	}
 
 	output = filenames[1];
 
