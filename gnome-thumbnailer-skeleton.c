@@ -325,8 +325,9 @@ int main (int argc, char **argv)
 	g_free (input_filename);
 
 	if (!pixbuf) {
-		g_warning ("Could not thumbnail '%s': %s", filenames[0], error->message);
-		g_error_free (error);
+		g_warning ("Could not thumbnail '%s': %s", filenames[0],
+			   error ? error->message : "Thumbnailer failed without returning an error");
+		g_clear_error (&error);
 		g_strfreev (filenames);
 		return 1;
 	}
