@@ -250,10 +250,13 @@ int main (int argc, char **argv)
 	g_option_context_add_main_entries (context, entries, NULL);
 
 	if (g_option_context_parse (context, &argc, &argv, &error) == FALSE) {
+		g_option_context_free (context);
 		g_warning ("Couldn't parse command-line options: %s", error->message);
 		g_error_free (error);
 		return 1;
 	}
+
+	g_option_context_free (context);
 
 	/* Set fatal warnings if required */
 	if (g_fatal_warnings) {
